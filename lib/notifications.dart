@@ -1,10 +1,7 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:permission_handler/permission_handler.dart' as perm_handler;
-import 'package:timezone/standalone.dart' as tz;
 import 'package:workmanager/workmanager.dart';
 
 class Notifications {
@@ -63,43 +60,6 @@ class Notifications {
         await _notificationDetails(),
         payload: payload,
       );
-
-  static void showScheduledDailyNotification({
-    int id = 0,
-    String? title,
-    String? body,
-    String? payload,
-    required Time time,
-    //required DateTime scheduleDateTime,
-  }) async =>
-      flutterLocalNotificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        _scheduleDaily(time),
-        await _notificationDetails(),
-        payload: payload,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-        UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-
-  static tz.TZDateTime _scheduleDaily(Time time) {
-    final now = tz.TZDateTime.now(tz.getLocation('Europe/Warsaw'));
-    final scheduledDate = tz.TZDateTime(
-      tz.getLocation('Europe/Warsaw'),
-      now.year,
-      now.month,
-      now.day,
-      time.hour,
-      time.minute,
-      time.second,
-    );
-    return scheduledDate.isBefore(now)
-        ? scheduledDate.add(const Duration(days: 1))
-        : scheduledDate;
-  }
 
   static void requestNotificationPermissions() async{
     final perm_handler.PermissionStatus status = await perm_handler.Permission.notification.request();
