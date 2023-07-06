@@ -1,8 +1,9 @@
 import 'dart:convert';
 
+import 'package:camera_app/workmanager.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart' as perm_handler;
+import 'package:workmanager/workmanager.dart';
 import 'notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:http/http.dart' as http;
@@ -36,7 +37,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    Noti.init();
+    Notifications.init();
+    Workmanager().initialize(callbackDispatcher, isInDebugMode: false);
     requestNotificationPermissions();
     tz.initializeTimeZones();
     listenNotifications();
@@ -52,23 +54,29 @@ class _HomePageState extends State<HomePage> {
             ElevatedButton(
                 onPressed: (){
                   fetchForecast().then((value) =>
-                  Noti.showNotification(
-                      title: "Hey, it's pretty hot today!",
+                  Notifications.showNotification(
+                      title: "Hey, here's the forecast!",
                       body: "It's forecasted $value degrees today.",
                       payload: "Payload"
                   )
                   );
                 },
-                child: Text("Simple Notification")),
+                child: const Text("Simple Notification")),
             ElevatedButton(
-                onPressed: (){
-                  Noti.showScheduledNotification(
-                    title: 'Notification',
-                      body: 'body',
-                      payload: 'payload',
-                  );
+                onPressed: () async{
+                  final perm_handler.PermissionStatus status =
+                      await perm_handler.Permission.notification.request();
+                  if (status.isGranted) {
+                    TimeOfDay? selectedTime = null;
+                    while (selectedTime == null) {
+                      selectedTime = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                    }
+                    Notifications.registerDailyForecastNotifications(
+                        time: selectedTime);
+                  }
                 },
-                child: const Text("Schedule Notification")),
+                child: const Text("Subscribe to notifications with workmanager")
+            ), //If you hit the button, you will need to pick the time the notification will be sent
           ],
         ),
       ),
@@ -77,7 +85,7 @@ class _HomePageState extends State<HomePage> {
 }
 
 void listenNotifications() {
-  Noti.onNotification.stream.listen(onClickedNotification);
+  Notifications.onNotification.stream.listen(onClickedNotification);
 }
 
 onClickedNotification(String? payload) => print(payload);
